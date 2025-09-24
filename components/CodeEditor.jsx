@@ -15,17 +15,7 @@ function exampleFunction() {
   return "This is a sample function";
 }
 
-// You can write JavaScript, React components, HTML, CSS, or any other code
-const component = () => {
-  return (
-    <div>
-      <h1>Welcome to Code Editor</h1>
-      <p>Edit your code and see live preview</p>
-    </div>
-  );
-};
-
-export default component;`);
+console.log(exampleFunction());`);
   const [theme, setTheme] = useState('default');
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [showSuggestion, setShowSuggestion] = useState(false);
@@ -35,9 +25,8 @@ export default component;`);
   const [validationError, setValidationError] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [fileName, setFileName] = useState('untitled.js');
-  const [showFileLoader, setShowFileLoader] = useState(false);
-  const [fileList, setFileList] = useState([]);
   const socketRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     socketRef.current = io(SOCKET_URL);
@@ -51,53 +40,35 @@ export default component;`);
       setVersions(JSON.parse(savedVersions));
     }
 
-    // Load available files
-    loadAvailableFiles();
-
     return () => {
       socketRef.current.disconnect();
     };
   }, []);
 
-  // Load available files from the project
-  const loadAvailableFiles = async () => {
-    try {
-      const response = await fetch('/api/files');
-      const data = await response.json();
-      if (response.ok) {
-        setFileList(data.files);
-      }
-    } catch (error) {
-      console.error('Error loading files:', error);
+  // Load code from a file selected by user
+  const loadFile = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
-  // Load code from a specific file
-  const loadFile = async (filePath) => {
-    try {
-      const response = await fetch('/api/files/load', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ filePath }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setCode(data.content);
-        setFileName(filePath.split('/').pop());
-        setLanguage(getLanguageFromFileName(filePath));
-        // Reset history for new file
-        setHistory([data.content]);
-        setHistoryIndex(0);
-        socketRef.current.emit('code:edit', { code: data.content });
-        setShowFileLoader(false);
-      } else {
-        alert('Failed to load file: ' + data.error);
-      }
-    } catch (error) {
-      alert('Error loading file: ' + error.message);
-    }
+  // Handle file input change event
+  const handleFileInputChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target.result;
+      setCode(content);
+      setFileName(file.name);
+      setLanguage(getLanguageFromFileName(file.name));
+      // Reset history for new file
+      setHistory([content]);
+      setHistoryIndex(0);
+      socketRef.current.emit('code:edit', { code: content });
+    };
+    reader.readAsText(file);
   };
 
   // Get language from file extension
@@ -143,15 +114,13 @@ export default component;`);
   // Handle code changes and broadcast
   const handleCodeChange = (e) => {
     const newCode = e.target.value;
-    if (validateCode(newCode)) {
-      setCode(newCode);
-      // Add to history
-      const newHistory = history.slice(0, historyIndex + 1);
-      newHistory.push(newCode);
-      setHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-      socketRef.current.emit('code:edit', { code: newCode });
-    }
+    setCode(newCode);
+    // Add to history
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newCode);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+    socketRef.current.emit('code:edit', { code: newCode });
   };
 
 
@@ -207,15 +176,30 @@ export default component;`);
             </div>
           );
         } else if (language === 'javascript') {
-          return (
-            <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
-              <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">JavaScript Output</h3>
-              <div id="js-preview" className="p-2 bg-gray-100 dark:bg-gray-600 rounded">
-                {/* JavaScript execution would go here */}
-                <p className="text-gray-900 dark:text-gray-100">JavaScript preview functionality</p>
+          try {
+            let output = '';
+            const originalLog = console.log;
+            console.log = (...args) => {
+              output += args.join(' ') + '\n';
+            };
+            eval(code);
+            console.log = originalLog;
+            return (
+              <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
+                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">JavaScript Output</h3>
+                <pre className="p-2 bg-gray-100 dark:bg-gray-600 rounded text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{output || 'No output'}</pre>
               </div>
-            </div>
-          );
+            );
+          } catch (error) {
+            return (
+              <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
+                <div className="text-red-500">
+                  <h3 className="font-semibold mb-2 text-red-600 dark:text-red-400">Execution Error:</h3>
+                  <pre className="whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100">{error.message}</pre>
+                </div>
+              </div>
+            );
+          }
         } else if (language === 'css') {
           return (
             <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
@@ -263,21 +247,21 @@ export default component;`);
         <div className="flex items-center gap-4">
           {/* File operations */}
           <button
-            onClick={() => setShowFileLoader(!showFileLoader)}
+            onClick={loadFile}
             className="p-2 rounded bg-blue-500 hover:bg-blue-600 text-white transition-transform"
           >
             📁 Load File
           </button>
           {/* Undo/Redo */}
           <button
-            onClick={undo}
+            onClick={() => undo(history, historyIndex, setHistoryIndex, setCode, socketRef)}
             disabled={historyIndex === 0}
             className="p-2 rounded bg-blue-500 hover:bg-blue-600 text-white transition-transform disabled:opacity-50"
           >
             ↶ Undo
           </button>
           <button
-            onClick={redo}
+            onClick={() => redo(history, historyIndex, setHistoryIndex, setCode, socketRef)}
             disabled={historyIndex === history.length - 1}
             className="p-2 rounded bg-blue-500 hover:bg-blue-600 text-white transition-transform disabled:opacity-50"
           >
@@ -294,31 +278,6 @@ export default component;`);
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* File Loader Sidebar */}
-        {showFileLoader && (
-          <aside className="w-64 bg-white dark:bg-gray-800 p-4 border-r shadow-inner">
-            <div className="font-semibold mb-4 text-lg">Load File</div>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {fileList.map((file, index) => (
-                <div
-                  key={index}
-                  className="p-2 rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-gray-700"
-                  onClick={() => loadFile(file.path)}
-                >
-                  <div className="font-medium">{file.name}</div>
-                  <div className="text-xs text-gray-500">{file.path}</div>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowFileLoader(false)}
-              className="mt-4 w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Close
-            </button>
-          </aside>
-        )}
-
         {/* Main Editor */}
         <main className="flex-1 flex flex-col p-6 overflow-auto">
           <div className="flex items-center justify-between mb-4">
@@ -437,6 +396,12 @@ export default component;`);
           </div>
         </div>
       )}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileInputChange}
+        style={{ display: 'none' }}
+      />
     </div>
   );
 }
