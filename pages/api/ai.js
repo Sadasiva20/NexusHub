@@ -2,11 +2,7 @@ import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 
 // Load encrypted environment variables
-<<<<<<< HEAD
 import loadEncryptedEnv from '../../utils/loadEnv';
-=======
-const loadEncryptedEnv = require('../../utils/loadEnv');
->>>>>>> 25ac2ecafac436dcd7c052f6cfa1958b510ea875
 loadEncryptedEnv();
 
 export default async function handler(req, res) {

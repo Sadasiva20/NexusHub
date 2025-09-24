@@ -202,25 +202,25 @@ export default component;`);
       try {
         if (language === 'html') {
           return (
-            <div className="border rounded p-4 bg-white shadow">
-              <div dangerouslySetInnerHTML={{ __html: code }} />
+            <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
+              <div className="text-gray-900 dark:text-gray-100" dangerouslySetInnerHTML={{ __html: code }} />
             </div>
           );
         } else if (language === 'javascript') {
           return (
-            <div className="border rounded p-4 bg-white shadow">
-              <h3 className="text-lg font-semibold mb-2">JavaScript Output</h3>
-              <div id="js-preview" className="p-2 bg-gray-100 rounded">
+            <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
+              <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">JavaScript Output</h3>
+              <div id="js-preview" className="p-2 bg-gray-100 dark:bg-gray-600 rounded">
                 {/* JavaScript execution would go here */}
-                <p>JavaScript preview functionality</p>
+                <p className="text-gray-900 dark:text-gray-100">JavaScript preview functionality</p>
               </div>
             </div>
           );
         } else if (language === 'css') {
           return (
-            <div className="border rounded p-4 bg-white shadow">
-              <h3 className="text-lg font-semibold mb-2">CSS Preview</h3>
-              <div style={{ padding: '20px', border: '1px solid #ccc' }}>
+            <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
+              <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">CSS Preview</h3>
+              <div style={{ padding: '20px', border: '1px solid #ccc' }} className="text-gray-900 dark:text-gray-100">
                 <div style={{ ...JSON.parse(code.replace(/(\w+):/g, '"$1":').replace(/;/g, ',')) }}>
                   CSS Preview Element
                 </div>
@@ -230,18 +230,18 @@ export default component;`);
         }
       } catch (error) {
         return (
-          <div className="border rounded p-4 bg-white shadow">
+          <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
             <div className="text-red-500">
-              <h3 className="font-semibold mb-2">Preview Error:</h3>
-              <pre className="whitespace-pre-wrap text-sm">{error.message}</pre>
+              <h3 className="font-semibold mb-2 text-red-600 dark:text-red-400">Preview Error:</h3>
+              <pre className="whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100">{error.message}</pre>
             </div>
           </div>
         );
       }
     }
     return (
-      <div className="border rounded p-4 bg-white shadow">
-        <div className="text-gray-500">
+      <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
+        <div className="text-gray-900 dark:text-gray-100">
           <h3 className="font-semibold mb-2">Code Preview</h3>
           <p>Preview not available for {language} files.</p>
           <p>Language: {language}</p>
@@ -253,7 +253,7 @@ export default component;`);
 
   return (
     <div
-      className={`flex flex-col h-screen ${theme === 'dark' ? 'bg-gray-100 text-white' : 'bg-gradient-to-br from-white to-blue-100 text-gray-900'}`}
+      className={`flex flex-col h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-white to-blue-100 text-gray-900'}`}
     >
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-800 shadow-lg animate-fade-in">
@@ -283,19 +283,6 @@ export default component;`);
           >
             ↷ Redo
           </button>
-          {/* User avatars with animation */}
-          <div className="flex -space-x-2">
-            <img
-              src="/user1.png"
-              className="w-8 h-8 rounded-full border-2 border-white animate-pulse"
-              alt="User1"
-            />
-            <img
-              src="/user2.png"
-              className="w-8 h-8 rounded-full border-2 border-white animate-pulse"
-              alt="User2"
-            />
-          </div>
           {/* Theme toggle */}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'default' : 'dark')}
@@ -396,7 +383,7 @@ export default component;`);
 
         {/* Preview Panel */}
         <section className="w-96 bg-white dark:bg-gray-900 p-6 border-l flex flex-col shadow-inner">
-          <div className="text-lg font-semibold mb-2">Live Preview</div>
+          <div className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Live Preview</div>
           <div className={`flex-1 bg-gray-50 dark:bg-gray-800 rounded p-4 shadow-inner overflow-auto ${validationError ? 'border-2 border-red-500' : ''}`}>
             {validationError ? (
               <div className="text-red-500">
@@ -407,7 +394,7 @@ export default component;`);
               renderPreview()
             )}
           </div>
-          <div className="mt-4 text-xs text-gray-500">
+          <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
             Code changes update preview in real-time.
           </div>
         </section>
