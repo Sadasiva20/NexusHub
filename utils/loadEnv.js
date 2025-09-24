@@ -19,10 +19,7 @@ function loadEncryptedEnv() {
     });
 
     console.log('Environment variables loaded successfully');
-<<<<<<< HEAD
-=======
     console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'Set' : 'Not set');
->>>>>>> 25ac2ecafac436dcd7c052f6cfa1958b510ea875
   } catch (error) {
     console.error('Error loading encrypted env:', error);
   }
