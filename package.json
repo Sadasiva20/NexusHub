@@ -1,0 +1,45 @@
+{
+  "name": "nexushub",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint",
+    "socket": "node socket/server.js",
+    "sb:login": "storyblok login",
+    "sb:pull": "storyblok pull-components",
+    "sb:push": "storyblok push-components",
+    "sb:migrate": "storyblok generate-migration",
+    "sb:validate": "storyblok validate",
+    "sync-schemas": "npm run sb:pull && npm run sb:validate",
+    "deploy-schemas": "npm run sb:validate && npm run sb:push",
+    "auto-sync": "npm run sync-schemas && npm run deploy-schemas",
+    "test": "npm run lint && npm run type-check",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^2.0.34",
+    "@next/env": "^15.5.4",
+    "@storyblok/react": "^5.4.12",
+    "ai": "^5.0.51",
+    "encrypt-env": "^0.2.8",
+    "next": "15.5.4",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "entryPoints": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx"],
+  "out": "docs",
+  "exclude": ["node_modules/**", ".next/**"],
+  "includeVersion": true,
+  "name": "Storyblock Project Documentation",
+  "readme": "README.md",
+  "entryPointStrategy": "expand"
+}
