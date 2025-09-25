@@ -19,7 +19,7 @@ A modern, real-time collaborative development environment for developers to work
 - **Realtime Collaboration:** Socket.IO (Node.js server)
 - **Backend/API:** Next.js API routes, Node.js, Storyblok Management API
 - **State Management:** React hooks (expandable to Zustand/Redux)
-- **AI Integration:** Vercel AI SDK with GPT-3.5-turbo for schema suggestions
+- **AI Integration:** Vercel AI SDK with Google Gemini 2.5 Pro for schema suggestions
 - **Other:** TypeScript, ESLint, PostCSS, Vercel (hosting), Railway/Render (Socket.IO server)
 
 ## Features
@@ -55,7 +55,7 @@ nexushub/
 ├── components/            # React components (Interface, Feature, Grid, etc.)
 ├── pages/                 # Next.js pages and API routes
 │   ├── api/               # Next.js API routes
-│   ├── ai.js          # OpenAI API integration for schema suggestions
+│   ├── ai.js          # Google Gemini API integration for schema suggestions
 │   │   └── storyblok.js   # Storyblok Management API integration
 │   ├── _app.js            # Next.js app component
 │   └── index.js           # Main application page
@@ -91,18 +91,18 @@ nexushub/
    Create a `.env.local` file in the project root and add the following variables. Replace the placeholder values with your actual Storyblok tokens (obtain these from your Storyblok space settings):
 
    ```
-   NEXT_PUBLIC_STORYBLOK_CONTENT_API_ACCESS_TOKEN=your_content_api_access_token
+   STORYBLOK_ACCESS_TOKEN=your_storyblok_access_token
    STORYBLOK_MANAGEMENT_TOKEN=your_management_token
    STORYBLOK_SPACE_ID=your_space_id
    STORYBLOK_OAUTH_TOKEN=your_oauth_token
-   OPENAI_API_KEY=your_openai_api_key_here  # Required for AI features
+   GOOGLE_GENERATIVE_AI_API_KEY=your_google_generative_ai_api_key_here  # Required for AI features
    ```
 
-   - `NEXT_PUBLIC_STORYBLOK_CONTENT_API_ACCESS_TOKEN`: Public token for accessing Storyblok content.
+   - `STORYBLOK_ACCESS_TOKEN`: Token for Storyblok Management API to manage components.
    - `STORYBLOK_MANAGEMENT_TOKEN`: Token for managing components via the API.
    - `STORYBLOK_SPACE_ID`: Unique ID of your Storyblok space.
    - `STORYBLOK_OAUTH_TOKEN`: Token for OAuth authentication with Storyblok.
-   - `OPENAI_API_KEY`: API key for OpenAI to enable AI-powered suggestions.
+   - `GOOGLE_GENERATIVE_AI_API_KEY`: API key for Google Generative AI to enable AI-powered suggestions.
 
 3. **Login to Storyblok CLI:**
    Authenticate with your Storyblok account using the CLI:
@@ -147,12 +147,12 @@ nexushub/
 
 - If you encounter issues with the Socket.IO server, ensure port 3001 is not in use and that Node.js is properly installed.
 - For Storyblok-related errors, verify your tokens and space ID in the `.env.local` file.
-- If AI features don't work, check that your OpenAI API key is valid and has sufficient credits.
+- If AI features don't work, check that your Google Generative AI API key is valid and has sufficient credits.
 - Run `npm run type-check` to ensure there are no TypeScript errors before starting.
 
 ## AI-Powered Schema Suggestions
 
-NexusHub integrates Vercel AI SDK to provide intelligent suggestions for improving your Storyblok component schemas. The AI assistant helps you:
+NexusHub integrates Vercel AI SDK with Google Gemini 2.5 Pro to provide intelligent suggestions for improving your Storyblok component schemas. The AI assistant helps you:
 
 - **Optimize schema structure** for better usability and maintainability
 - **Add missing validation** rules and constraints
@@ -168,10 +168,10 @@ NexusHub integrates Vercel AI SDK to provide intelligent suggestions for improvi
 
 ### AI Configuration
 
-The AI integration uses OpenAI's GPT-3.5-turbo model directly through the OpenAI API. Make sure you have the required environment variables set up for the AI features to work properly:
+The AI integration uses Google Gemini 2.5 Pro model through the Google Generative AI API. Make sure you have the required environment variables set up for the AI features to work properly:
 
 ```
-OPENAI_API_KEY=your_openai_api_key_here
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_generative_ai_api_key_here
 ```
 
 ## Enhanced Developer Workflows with Storyblok CLI

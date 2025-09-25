@@ -1,9 +1,5 @@
 import StoryblokClient from 'storyblok-js-client';
 
-// Load encrypted environment variables
-import loadEncryptedEnv from '../../utils/loadEnv';
-loadEncryptedEnv();
-
 const Storyblok = new StoryblokClient({
   accessToken: process.env.STORYBLOK_ACCESS_TOKEN,
 });

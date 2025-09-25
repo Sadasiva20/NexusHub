@@ -1,9 +1,5 @@
 import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
-
-// Load encrypted environment variables
-import loadEncryptedEnv from '../../utils/loadEnv';
-loadEncryptedEnv();
+import { google } from '@ai-sdk/google';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -51,8 +47,8 @@ export default async function handler(req, res) {
         userPrompt = `Provide suggestions for this ${language} code:\n\n${code}`;
     }
 
-    // Use OpenAI SDK
-    const model = openai('gpt-3.5-turbo');
+    // Use Google Gemini SDK
+    const model = google('gemini-2.5-pro');
     const result = await generateText({
       model: model,
       messages: [
@@ -63,15 +59,15 @@ export default async function handler(req, res) {
       temperature: 0.7,
     });
 
-    const suggestion = result.text || 'No response from OpenAI';
+    const suggestion = result.text || 'No response from Google Gemini';
 
     return res.status(200).json({ suggestion });
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    console.error('Google Gemini API error:', error);
 
     // Handle specific API errors
     if (error.message && error.message.includes('api')) {
-      return res.status(401).json({ error: 'Invalid OpenAI API configuration' });
+      return res.status(401).json({ error: 'Invalid Google Gemini API configuration' });
     }
 
     return res.status(500).json({ error: 'Failed to get AI suggestion' });
