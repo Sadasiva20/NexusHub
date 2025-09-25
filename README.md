@@ -16,18 +16,18 @@ A modern, real-time collaborative development environment for developers to work
 ## Technologies Used
 
 - **Frontend:** Next.js, React, Tailwind CSS
-- **Realtime Collaboration:** Socket.IO (Node.js server)
+- **Realtime Collaboration:** Supabase (managed real-time backend)
 - **Backend/API:** Next.js API routes, Node.js, Storyblok Management API
 - **State Management:** React hooks (expandable to Zustand/Redux)
 - **AI Integration:** Vercel AI SDK with Google Gemini 2.5 Pro for schema suggestions
-- **Other:** TypeScript, ESLint, PostCSS, Vercel (hosting), Railway/Render (Socket.IO server)
+- **Other:** TypeScript, ESLint, PostCSS, Vercel (hosting)
 
 ## Features
 
 ### Core Features (MVP)
 
 - Real-time collaborative JSON schema editor
-- Live updates between users via Socket.IO
+- Live updates between users via Supabase real-time channels
 - Basic Storyblok API integration for CRUD operations
 - Simple, modern UI with Tailwind CSS
 - AI-powered schema suggestions using Vercel AI SDK
@@ -53,14 +53,15 @@ A modern, real-time collaborative development environment for developers to work
 nexushub/
 ├── public/                # Static assets (SVGs, icons)
 ├── components/            # React components (Interface, Feature, Grid, etc.)
+├── lib/                   # Utility libraries (Supabase client)
 ├── pages/                 # Next.js pages and API routes
 │   ├── api/               # Next.js API routes
 │   ├── ai.js          # Google Gemini API integration for schema suggestions
 │   │   └── storyblok.js   # Storyblok Management API integration
 │   ├── _app.js            # Next.js app component
 │   └── index.js           # Main application page
-├── socket/                # Socket.IO server for real-time collaboration
 ├── styles/                # Global CSS styles
+├── utils/                 # Utility functions (undoRedo, versionManager)
 ├── README.md              # Project documentation
 ├── package.json           # Project dependencies and scripts
 ├── tsconfig.json          # TypeScript configuration
@@ -88,7 +89,7 @@ nexushub/
    ```
 
 2. **Set up environment variables:**
-   Create a `.env.local` file in the project root and add the following variables. Replace the placeholder values with your actual Storyblok tokens (obtain these from your Storyblok space settings):
+   Create a `.env.local` file in the project root and add the following variables. Replace the placeholder values with your actual tokens:
 
    ```
    STORYBLOK_ACCESS_TOKEN=your_storyblok_access_token
@@ -96,6 +97,8 @@ nexushub/
    STORYBLOK_SPACE_ID=your_space_id
    STORYBLOK_OAUTH_TOKEN=your_oauth_token
    GOOGLE_GENERATIVE_AI_API_KEY=your_google_generative_ai_api_key_here  # Required for AI features
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url  # From Supabase dashboard
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key  # From Supabase dashboard
    ```
 
    - `STORYBLOK_ACCESS_TOKEN`: Token for Storyblok Management API to manage components.
@@ -122,16 +125,7 @@ nexushub/
 
    This will start the server on `http://localhost:3000`. You should see output indicating the server is running.
 
-5. **Start the Socket.IO server:**
-   In a separate terminal, start the real-time collaboration server:
-
-   ```bash
-   node socket/server.js
-   ```
-
-   This server handles real-time updates and should run on port 3001 by default.
-
-6. **Access the application:**
+5. **Access the application:**
    Open your web browser and navigate to:
 
    ```
@@ -140,12 +134,12 @@ nexushub/
 
    You should now see the NexusHub interface.
 
-7. **Test real-time collaboration:**
+6. **Test real-time collaboration:**
    Open the application in multiple browser windows or tabs to test live schema editing. Changes made in one window should reflect in others in real-time.
 
 ### Troubleshooting
 
-- If you encounter issues with the Socket.IO server, ensure port 3001 is not in use and that Node.js is properly installed.
+- For Supabase-related errors, verify your URL and anon key in the `.env.local` file.
 - For Storyblok-related errors, verify your tokens and space ID in the `.env.local` file.
 - If AI features don't work, check that your Google Generative AI API key is valid and has sufficient credits.
 - Run `npm run type-check` to ensure there are no TypeScript errors before starting.
@@ -212,7 +206,7 @@ NexusHub leverages Storyblok as a headless CMS for managing component schemas wi
 - **Configuration:** The `storyblok.config.js` file sets up the connection to your Storyblok space, including tokens and directories for components, stories, and datasources.
 - **API Integration:** The `pages/api/storyblok.js` provides a Next.js API route for managing components via the Storyblok Management API, enabling create, read, update, and delete operations.
 - **Component Structure:** Components like `Page.js` and `Teaser.js` use Storyblok's React SDK to render editable content, allowing for live editing in the Storyblok visual editor.
-- **Real-time Collaboration:** Integrated with Socket.IO for live updates, enabling multiple users to edit schemas simultaneously.
+- **Real-time Collaboration:** Integrated with Supabase for live updates, enabling multiple users to edit schemas simultaneously.
 - **CLI Tools:** Storyblok CLI commands are used for pulling, pushing, and migrating schemas, streamlining the development workflow.
 
 

@@ -1,10 +1,8 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
+import { supabase } from '../lib/supabase';
 import { undo, redo } from '../utils/undoRedo';
 import { saveVersion, rollbackToVersion } from '../utils/versionManager';
-
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001'; // Socket.IO server URL
 
 export default function CodeEditor() {
   const [code, setCode] = useState(`// Welcome to NexusHub Code Editor
@@ -25,14 +23,75 @@ console.log(exampleFunction());`);
   const [validationError, setValidationError] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [fileName, setFileName] = useState('untitled.js');
-  const socketRef = useRef(null);
+  const [room, setRoom] = useState('default-room'); // Can be derived from fileName or URL
+  const [username, setUsername] = useState('Anonymous');
+  const [users, setUsers] = useState([]);
+  const [cursors, setCursors] = useState({});
+  const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const userId = useRef(Date.now().toString());
+  const channelRef = useRef(null);
 
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL);
-    socketRef.current.on('code:update', (data) => {
-      setCode(data.code);
-    });
+    // Prompt for username if not set
+    if (username === 'Anonymous') {
+      const name = prompt('Enter your username for collaboration:') || 'Anonymous';
+      setUsername(name);
+    }
+
+    // Derive room from fileName or set manually
+    if (fileName !== 'untitled.js') {
+      setRoom(`room-${fileName.replace(/\./g, '-')}`);
+    }
+
+    // Set up Supabase channel
+    const channel = supabase.channel(`editor:${room}`);
+
+    channel
+      .on('broadcast', { event: 'user_join' }, ({ payload }) => {
+        setUsers(prev => {
+          if (!prev.find(u => u.id === payload.user.id)) {
+            return [...prev, payload.user];
+          }
+          return prev;
+        });
+      })
+      .on('broadcast', { event: 'user_leave' }, ({ payload }) => {
+        setUsers(prev => prev.filter(u => u.id !== payload.userId));
+        setCursors(prev => {
+          const newCursors = { ...prev };
+          delete newCursors[payload.userId];
+          return newCursors;
+        });
+      })
+      .on('broadcast', { event: 'code_update' }, ({ payload }) => {
+        if (payload.userId !== userId.current) {
+          setCode(payload.code);
+          // Update history if needed
+          const newHistory = history.slice(0, historyIndex + 1);
+          newHistory.push(payload.code);
+          setHistory(newHistory);
+          setHistoryIndex(newHistory.length - 1);
+        }
+      })
+      .on('broadcast', { event: 'cursor_move' }, ({ payload }) => {
+        if (payload.userId !== userId.current) {
+          setCursors(prev => ({ ...prev, [payload.userId]: payload.position }));
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Connected to Supabase channel');
+          // Send join event
+          channel.send({
+            type: 'broadcast',
+            event: 'user_join',
+            payload: { user: { id: userId.current, name: username } }
+          });
+        }
+      });
+
+    channelRef.current = channel;
 
     // Load versions from localStorage
     const savedVersions = localStorage.getItem('codeVersions');
@@ -41,9 +100,16 @@ console.log(exampleFunction());`);
     }
 
     return () => {
-      socketRef.current.disconnect();
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'user_leave',
+          payload: { userId: userId.current }
+        });
+        supabase.removeChannel(channelRef.current);
+      }
     };
-  }, []);
+  }, [room, username, fileName]);
 
   // Load code from a file selected by user
   const loadFile = () => {
@@ -66,7 +132,13 @@ console.log(exampleFunction());`);
       // Reset history for new file
       setHistory([content]);
       setHistoryIndex(0);
-      socketRef.current.emit('code:edit', { code: content });
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'code_update',
+          payload: { code: content, userId: userId.current }
+        });
+      }
     };
     reader.readAsText(file);
   };
@@ -120,7 +192,45 @@ console.log(exampleFunction());`);
     newHistory.push(newCode);
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
-    socketRef.current.emit('code:edit', { code: newCode });
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'code_update',
+        payload: { code: newCode, userId: userId.current }
+      });
+    }
+  };
+
+  // Handle cursor and selection changes
+  const handleCursorChange = () => {
+    if (!textareaRef.current) return;
+
+    const textarea = textareaRef.current;
+    const pos = textarea.selectionStart;
+    const text = textarea.value;
+
+    // Calculate line and column
+    let line = 0;
+    let col = 0;
+    let i = 0;
+    while (i < pos) {
+      if (text[i] === '\n') {
+        line++;
+        col = 0;
+      } else {
+        col++;
+      }
+      i++;
+    }
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'cursor_move',
+        payload: { userId: userId.current, position: { line: line + 1, col: col + 1 } }
+      });
+    }
   };
 
 
@@ -158,7 +268,13 @@ console.log(exampleFunction());`);
     if (aiSuggestion) {
       const newCode = code + '\n\n// AI Suggestion Applied:\n' + aiSuggestion;
       setCode(newCode);
-      socketRef.current.emit('code:edit', { code: newCode });
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'code_update',
+          payload: { code: newCode, userId: userId.current }
+        });
+      }
       setShowSuggestion(false);
     }
   };
@@ -254,14 +370,14 @@ console.log(exampleFunction());`);
           </button>
           {/* Undo/Redo */}
           <button
-            onClick={() => undo(history, historyIndex, setHistoryIndex, setCode, socketRef)}
+            onClick={() => undo(history, historyIndex, setHistoryIndex, setCode, channelRef, userId.current)}
             disabled={historyIndex === 0}
             className="p-2 rounded bg-blue-500 hover:bg-blue-600 text-white transition-transform disabled:opacity-50"
           >
             ↶ Undo
           </button>
           <button
-            onClick={() => redo(history, historyIndex, setHistoryIndex, setCode, socketRef)}
+            onClick={() => redo(history, historyIndex, setHistoryIndex, setCode, channelRef, userId.current)}
             disabled={historyIndex === history.length - 1}
             className="p-2 rounded bg-blue-500 hover:bg-blue-600 text-white transition-transform disabled:opacity-50"
           >
@@ -328,11 +444,14 @@ console.log(exampleFunction());`);
             </div>
           </div>
           <textarea
+            ref={textareaRef}
             className={`w-full h-64 p-4 rounded border font-mono resize-none shadow-inner focus:ring-2 transition-shadow ${
               theme === 'dark' ? 'bg-gray-900 text-gray-100 border-gray-700 focus:ring-gray-500' : 'bg-white text-gray-800 border-gray-300 focus:ring-blue-500'
             } ${validationError ? 'border-red-500 focus:ring-red-500' : ''}`}
             value={code}
             onChange={handleCodeChange}
+            onKeyUp={handleCursorChange}
+            onSelect={handleCursorChange}
             placeholder="Start editing your code here..."
           />
           {validationError && (
@@ -340,9 +459,38 @@ console.log(exampleFunction());`);
           )}
         </main>
 
-        {/* Preview Panel */}
+        {/* Preview Panel with Users and Cursors */}
         <section className="w-96 bg-white dark:bg-gray-900 p-6 border-l flex flex-col shadow-inner">
-          <div className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Live Preview</div>
+          <div className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Live Preview & Collaboration</div>
+          
+          {/* Users List */}
+          <div className="mb-4">
+            <h4 className="font-medium mb-2 text-gray-700 dark:text-gray-300">Collaborators ({users.length + 1})</h4>
+            <ul className="space-y-1">
+              {users.map(user => (
+                <li key={user.id} className="text-sm text-gray-600 dark:text-gray-400">
+                  👤 {user.name}
+                </li>
+              ))}
+              <li className="text-sm text-blue-600 dark:text-blue-400">👤 {username} (you)</li>
+            </ul>
+          </div>
+
+          {/* Cursors Info */}
+          <div className="mb-4">
+            <h4 className="font-medium mb-2 text-gray-700 dark:text-gray-300">Cursor Positions</h4>
+            <ul className="space-y-1 text-sm">
+              {Object.entries(cursors).map(([uid, pos]) => {
+                const user = users.find(u => u.id === uid) || { name: 'Unknown' };
+                return (
+                  <li key={uid} className="text-gray-600 dark:text-gray-400">
+                    {user.name}: Line {pos.line}, Col {pos.col}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
           <div className={`flex-1 bg-gray-50 dark:bg-gray-800 rounded p-4 shadow-inner overflow-auto ${validationError ? 'border-2 border-red-500' : ''}`}>
             {validationError ? (
               <div className="text-red-500">
@@ -354,7 +502,7 @@ console.log(exampleFunction());`);
             )}
           </div>
           <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-            Code changes update preview in real-time.
+            Code changes update in real-time across collaborators. Room: {room}
           </div>
         </section>
       </div>
