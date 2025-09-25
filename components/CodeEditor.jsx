@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import { undo, redo } from '../utils/undoRedo';
 import { saveVersion, rollbackToVersion } from '../utils/versionManager';
 
-const SOCKET_URL = 'http://localhost:3001'; // Socket.IO server URL
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001'; // Socket.IO server URL
 
 export default function CodeEditor() {
   const [code, setCode] = useState(`// Welcome to NexusHub Code Editor
@@ -377,7 +377,7 @@ console.log(exampleFunction());`);
 
       {/* AI Suggestion Modal */}
       {showSuggestion && (
-        <div className="fixed bottom-4 right-4 max-w-md p-4 bg-white dark:bg-gray-800 border rounded shadow-lg z-50">
+        <div className="fixed bottom-4 right-4 max-w-md p-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border rounded shadow-lg z-50">
           <h3 className="font-semibold mb-2">AI Code Suggestion</h3>
           <pre className="whitespace-pre-wrap text-sm mb-3">{aiSuggestion}</pre>
           <div className="flex gap-2">
