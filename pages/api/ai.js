@@ -18,8 +18,8 @@ export default async function handler(req, res) {
 
     switch (request) {
       case 'suggest_improvements':
-        systemPrompt = `You are an expert code reviewer and developer. Provide suggestions to improve the given ${language} code. Focus on best practices, performance, readability, and potential bugs.`;
-        userPrompt = `Suggest improvements for this ${language} code:\n\n${code}`;
+        systemPrompt = `You are an expert code reviewer and developer. Provide the improved version of the given ${language} code, ensuring it is syntactically correct, runnable, and incorporates best practices, performance optimizations, readability improvements, and bug fixes.`;
+        userPrompt = `Provide the improved version of this ${language} code:\n\n${code}`;
         break;
 
       case 'explain_code':

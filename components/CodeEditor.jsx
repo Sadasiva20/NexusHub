@@ -266,13 +266,17 @@ console.log(exampleFunction());`);
   // Apply AI suggestion
   const applyAiSuggestion = () => {
     if (aiSuggestion) {
-      const newCode = code + '\n\n// AI Suggestion Applied:\n' + aiSuggestion;
-      setCode(newCode);
+      setCode(aiSuggestion);
+      // Update history
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(aiSuggestion);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
       if (channelRef.current) {
         channelRef.current.send({
           type: 'broadcast',
           event: 'code_update',
-          payload: { code: newCode, userId: userId.current }
+          payload: { code: aiSuggestion, userId: userId.current }
         });
       }
       setShowSuggestion(false);
