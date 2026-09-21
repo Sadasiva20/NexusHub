@@ -10,11 +10,11 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'File path is required' });
       }
 
-      const projectRoot = process.cwd();
-      const fullPath = path.join(projectRoot, filePath);
+      const projectRoot = path.resolve(process.cwd());
+      const fullPath = path.resolve(projectRoot, filePath);
 
       // Security check - ensure file is within project directory
-      if (!fullPath.startsWith(projectRoot)) {
+      if (fullPath !== projectRoot && !fullPath.startsWith(`${projectRoot}${path.sep}`)) {
         return res.status(403).json({ error: 'Access denied' });
       }
 

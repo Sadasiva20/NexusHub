@@ -14,14 +14,15 @@ const components = {
   page: Page,
 };
 
-storyblokInit({
-  accessToken: process.env.NEXT_PUBLIC_STORYBLOK_ACCESS_TOKEN,
-  use: [apiPlugin],
-  components,
-  apiOptions: {
-    region: ''
-  }
-});
+const storyblokAccessToken = process.env.NEXT_PUBLIC_STORYBLOK_ACCESS_TOKEN;
+
+if (storyblokAccessToken) {
+  storyblokInit({
+    accessToken: storyblokAccessToken,
+    use: [apiPlugin],
+    components,
+  });
+}
 
 function MyApp({ Component, pageProps }) {
   return (

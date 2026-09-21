@@ -212,7 +212,11 @@ export default function Interface() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ schema }),
+        body: JSON.stringify({
+          code: schema,
+          language: 'json',
+          request: 'suggest_improvements',
+        }),
       });
       const data = await response.json();
       if (response.ok) {

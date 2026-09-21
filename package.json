@@ -7,7 +7,6 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "socket": "node socket/server.js",
     "sb:login": "storyblok login",
     "sb:pull": "storyblok pull-components",
     "sb:push": "storyblok push-components",
@@ -28,6 +27,7 @@
     "next": "15.5.4",
     "react": "19.1.1",
     "react-dom": "19.1.1",
+    "storyblok-js-client": "^7.7.6",
     "three": "^0.173.0"
   },
   "devDependencies": {

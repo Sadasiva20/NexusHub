@@ -6,9 +6,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { code, language, request = 'suggest_improvements' } = req.body;
+  const {
+    code,
+    language = 'plaintext',
+    request = 'suggest_improvements',
+  } = req.body || {};
 
-  if (!code) {
+  if (typeof code !== 'string' || !code.trim()) {
     return res.status(400).json({ error: 'Code is required' });
   }
 

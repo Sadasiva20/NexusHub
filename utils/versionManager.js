@@ -24,6 +24,12 @@ export const rollbackToVersion = (versionId, versions, setCode, setFileName, set
     setCode(version.code);
     setFileName(version.fileName);
     setLanguage(version.language);
-    socketRef.current.emit('code:edit', { code: version.code });
+    if (socketRef.current) {
+      socketRef.current.send({
+        type: 'broadcast',
+        event: 'code_update',
+        payload: { code: version.code }
+      });
+    }
   }
 };

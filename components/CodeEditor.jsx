@@ -2,7 +2,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { undo, redo } from '../utils/undoRedo';
-import { saveVersion, rollbackToVersion } from '../utils/versionManager';
+import { saveVersion } from '../utils/versionManager';
+import { handleDownloadFile } from './DownloadHandler';
 
 export default function CodeEditor() {
   const [code, setCode] = useState(`// Welcome to NexusHub Code Editor
@@ -33,15 +34,19 @@ console.log(exampleFunction());`);
   const channelRef = useRef(null);
 
   useEffect(() => {
-    // Prompt for username if not set
-    if (username === 'Anonymous') {
-      const name = prompt('Enter your username for collaboration:') || 'Anonymous';
-      setUsername(name);
-    }
-
     // Derive room from fileName or set manually
     if (fileName !== 'untitled.js') {
       setRoom(`room-${fileName.replace(/\./g, '-')}`);
+    }
+
+    // Load versions from localStorage
+    const savedVersions = localStorage.getItem('codeVersions');
+    if (savedVersions) {
+      setVersions(JSON.parse(savedVersions));
+    }
+
+    if (!supabase) {
+      return undefined;
     }
 
     // Set up Supabase channel
@@ -92,12 +97,6 @@ console.log(exampleFunction());`);
       });
 
     channelRef.current = channel;
-
-    // Load versions from localStorage
-    const savedVersions = localStorage.getItem('codeVersions');
-    if (savedVersions) {
-      setVersions(JSON.parse(savedVersions));
-    }
 
     return () => {
       if (channelRef.current) {
@@ -187,6 +186,7 @@ console.log(exampleFunction());`);
   const handleCodeChange = (e) => {
     const newCode = e.target.value;
     setCode(newCode);
+    validateCode(newCode);
     // Add to history
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(newCode);
@@ -200,6 +200,23 @@ console.log(exampleFunction());`);
         payload: { code: newCode, userId: userId.current }
       });
     }
+  };
+
+  const restoreVersion = (versionId) => {
+    const version = versions.find((item) => item.id === versionId);
+    if (!version) return;
+
+    setCode(version.code);
+    setFileName(version.fileName);
+    setLanguage(version.language);
+    setHistory((currentHistory) => [...currentHistory, version.code]);
+    setHistoryIndex((currentHistory) => currentHistory.length);
+    validateCode(version.code);
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'code_update',
+      payload: { code: version.code, userId: userId.current },
+    });
   };
 
   // Handle cursor and selection changes
@@ -302,8 +319,11 @@ console.log(exampleFunction());`);
             console.log = (...args) => {
               output += args.join(' ') + '\n';
             };
-            eval(code);
-            console.log = originalLog;
+            try {
+              eval(code);
+            } finally {
+              console.log = originalLog;
+            }
             return (
               <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
                 <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">JavaScript Output</h3>
@@ -324,10 +344,9 @@ console.log(exampleFunction());`);
           return (
             <div className="border rounded p-4 bg-white dark:bg-gray-700 shadow">
               <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">CSS Preview</h3>
-              <div style={{ padding: '20px', border: '1px solid #ccc' }} className="text-gray-900 dark:text-gray-100">
-                <div style={{ ...JSON.parse(code.replace(/(\w+):/g, '"$1":').replace(/;/g, ',')) }}>
-                  CSS Preview Element
-                </div>
+              <style>{code}</style>
+              <div className="css-preview-element p-5 text-gray-900 dark:text-gray-100">
+                CSS Preview Element
               </div>
             </div>
           );
@@ -433,11 +452,23 @@ console.log(exampleFunction());`);
               />
             </div>
             <div className="flex gap-2">
+              <a
+                href="/schema"
+                className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+              >
+                Schema Builder
+              </a>
               <button
                 onClick={() => saveVersion(code, fileName, language, versions, setVersions)}
                 className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
               >
                 💾 Save Version
+              </button>
+              <button
+                onClick={() => handleDownloadFile(code, fileName, language)}
+                className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+              >
+                ⬇ Download
               </button>
               <button
                 onClick={getAiSuggestion}
@@ -447,6 +478,26 @@ console.log(exampleFunction());`);
               </button>
             </div>
           </div>
+          {versions.length > 0 && (
+            <div className="mb-3 flex items-center gap-2 text-sm">
+              <label htmlFor="saved-version">Restore version:</label>
+              <select
+                id="saved-version"
+                defaultValue=""
+                onChange={(event) => {
+                  if (event.target.value) restoreVersion(Number(event.target.value));
+                }}
+                className="rounded border p-1 bg-white dark:bg-gray-900"
+              >
+                <option value="">Choose a saved version</option>
+                {versions.map((version) => (
+                  <option key={version.id} value={version.id}>
+                    {version.fileName} — {new Date(version.timestamp).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <textarea
             ref={textareaRef}
             className={`w-full h-64 p-4 rounded border font-mono resize-none shadow-inner focus:ring-2 transition-shadow ${
@@ -521,9 +572,7 @@ console.log(exampleFunction());`);
         </div>
         <div>
           Status: <span className="text-green-600">Connected</span> | Voice:{' '}
-          <button className="underline hover:text-blue-500 transition-colors">
-            🎤 On
-          </button>
+          <span className="text-gray-500">Unavailable</span>
         </div>
       </footer>
 
